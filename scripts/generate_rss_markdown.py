@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 import re
 import sys
 from datetime import datetime, time, timedelta, timezone
@@ -8,6 +9,7 @@ from email.utils import parsedate_to_datetime
 from html import unescape
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from urllib.parse import urlparse
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
 
@@ -36,8 +38,30 @@ def _parse_date(text: Optional[str]) -> Optional[datetime]:
 
 
 def _open_url(url: str):
-    req = Request(url, headers={"User-Agent": "news-rss/1.0"})
+    parsed = urlparse(url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) news-rss/1.0 (+https://github.com/antonmry/news)",
+        "Accept": "application/xml,application/rss+xml,application/atom+xml;q=0.9,*/*;q=0.8",
+    }
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if parsed.netloc.endswith("github.com") and token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = Request(url, headers=headers)
     return urlopen(req)
+
+
+def _fetch_bytes(url: str) -> Optional[bytes]:
+    try:
+        with _open_url(url) as resp:
+            return resp.read()
+    except HTTPError as e:
+        reason = f"{e.code} {e.reason}".strip()
+        print(f"warning: could not fetch {url} ({reason})", file=sys.stderr)
+    except URLError as e:
+        print(f"warning: could not fetch {url} ({e.reason})", file=sys.stderr)
+    except Exception as e:
+        print(f"warning: could not fetch {url}: {e}", file=sys.stderr)
+    return None
 
 
 def _clean_text(text: Optional[str]) -> str:
@@ -255,8 +279,10 @@ def _extract_youtube_channel_id(url: str) -> str:
     parts = [p for p in parsed.path.split("/") if p]
     if len(parts) >= 2 and parts[0] == "channel":
         return parts[1]
-    with _open_url(url) as resp:
-        html = resp.read().decode("utf-8", "ignore")
+    html_bytes = _fetch_bytes(url)
+    if not html_bytes:
+        return ""
+    html = html_bytes.decode("utf-8", "ignore")
     marker = '"channelId":"'
     idx = html.find(marker)
     if idx != -1:
@@ -264,7 +290,7 @@ def _extract_youtube_channel_id(url: str) -> str:
         end = html.find('"', start)
         if end != -1:
             return html[start:end]
-    raise ValueError(f"Could not determine YouTube channel id from {url}")
+    return ""
 
 
 def _load_youtube_channels(path: str) -> List[Dict[str, str]]:
@@ -305,8 +331,9 @@ def generate_markdown(
         lines.append("## Blogs")
         lines.append("")
         for feed in blog_feeds:
-            with _open_url(feed["url"]) as resp:
-                xml_bytes = resp.read()
+            xml_bytes = _fetch_bytes(feed["url"])
+            if not xml_bytes:
+                continue
             feed_title, entries = _parse_feed_with_title(xml_bytes)
             entries = _filter_previous_day(entries)
             if not entries:
@@ -327,9 +354,13 @@ def generate_markdown(
         lines.append("")
         for channel in youtube_channels:
             channel_id = _extract_youtube_channel_id(channel["url"])
+            if not channel_id:
+                print(f"warning: skipping YouTube channel {channel['url']} (could not resolve id)", file=sys.stderr)
+                continue
             feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-            with _open_url(feed_url) as resp:
-                xml_bytes = resp.read()
+            xml_bytes = _fetch_bytes(feed_url)
+            if not xml_bytes:
+                continue
             feed_title, entries = _parse_feed_with_title(xml_bytes)
             entries = _filter_previous_day(entries)
             if not entries:
@@ -350,8 +381,9 @@ def generate_markdown(
     for source in sources:
         name = source["name"]
         url = source["url"]
-        with _open_url(url) as resp:
-            xml_bytes = resp.read()
+        xml_bytes = _fetch_bytes(url)
+        if not xml_bytes:
+            continue
         entries = _parse_feed(xml_bytes)
         entries.sort(key=lambda e: e.get("date") or datetime.min, reverse=True)
         entries = _filter_previous_day(entries)
@@ -372,8 +404,9 @@ def generate_markdown(
         lines.append("")
         for repo in github_repos:
             feed_url = f"https://github.com/{repo}/releases.atom"
-            with _open_url(feed_url) as resp:
-                xml_bytes = resp.read()
+            xml_bytes = _fetch_bytes(feed_url)
+            if not xml_bytes:
+                continue
             entries = _parse_feed(xml_bytes)
             entries = _filter_previous_day(entries)
             if not entries:
