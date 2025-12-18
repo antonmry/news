@@ -20,7 +20,7 @@ def _call_github_models(prompt: str, max_chars: int) -> str:
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_MODELS_TOKEN")
     if not token:
         raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_MODELS_TOKEN.")
-    model = os.environ.get("GITHUB_MODELS_MODEL", "gpt-4o-mini")
+    model = os.environ.get("GITHUB_MODELS_MODEL", "gpt-5-nano")
     api_url = f"https://api.github.com/ai/models/{model}/inference"
 
     payload = {
