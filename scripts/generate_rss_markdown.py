@@ -8,7 +8,7 @@ from datetime import datetime, time, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from html import unescape
 from typing import Any, Dict, List, Optional, Sequence, Tuple
-from urllib.parse import urlparse
+from urllib.parse import quote_plus, urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
@@ -298,6 +298,15 @@ def _extract_youtube_channel_id(url: str) -> str:
     return ""
 
 
+def _format_link_pair(message: str, link: str, link_label: str, include_share: bool = True) -> str:
+    if not link:
+        return message
+    if include_share:
+        share = f"https://bsky.app/intent/compose?text={quote_plus(message + ' ' + link)}"
+        return f"{message} [{link_label}]({link}) [Bsky]({share})"
+    return f"{message} [{link_label}]({link})"
+
+
 def _load_youtube_channels(path: str) -> List[Dict[str, str]]:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -332,9 +341,9 @@ def generate_markdown(
     lines: List[str] = []
     lines.append(f"# News {report_date}")
     lines.append("")
+    # Blogs
+    blog_section: List[str] = []
     if blog_feeds:
-        lines.append("## Blogs")
-        lines.append("")
         for feed in blog_feeds:
             xml_bytes = _fetch_bytes(feed["url"])
             if not xml_bytes:
@@ -344,19 +353,21 @@ def generate_markdown(
             if not entries:
                 continue
             name = feed["name"] or feed_title or feed["url"]
-            lines.append(f"### {name}")
-            lines.append("")
+            blog_section.append(f"### {name}")
+            blog_section.append("")
             for entry in entries:
                 message = entry.get("title") or entry.get("message") or "Untitled"
                 link = entry.get("link") or ""
-                if link:
-                    lines.append(f"- {message} [Article]({link})")
-                else:
-                    lines.append(f"- {message}")
-            lines.append("")
-    if youtube_channels:
-        lines.append("## YouTube")
+                blog_section.append(f"- {_format_link_pair(message, link, 'Article')}")
+            blog_section.append("")
+    if blog_section:
+        lines.append("## Blogs")
         lines.append("")
+        lines.extend(blog_section)
+
+    # YouTube
+    youtube_section: List[str] = []
+    if youtube_channels:
         for channel in youtube_channels:
             channel_id = _extract_youtube_channel_id(channel["url"])
             if not channel_id:
@@ -371,18 +382,20 @@ def generate_markdown(
             if not entries:
                 continue
             name = channel["name"] or feed_title or channel["url"]
-            lines.append(f"### {name}")
-            lines.append("")
+            youtube_section.append(f"### {name}")
+            youtube_section.append("")
             for entry in entries:
                 message = entry.get("title") or entry.get("message") or "Untitled"
                 link = entry.get("link") or ""
-                if link:
-                    lines.append(f"- {message} [Video]({link})")
-                else:
-                    lines.append(f"- {message}")
-            lines.append("")
-    lines.append("## BlueSky")
-    lines.append("")
+                youtube_section.append(f"- {_format_link_pair(message, link, 'Video')}")
+            youtube_section.append("")
+    if youtube_section:
+        lines.append("## YouTube")
+        lines.append("")
+        lines.extend(youtube_section)
+
+    # BlueSky
+    bluesky_section: List[str] = []
     for source in sources:
         name = source["name"]
         url = source["url"]
@@ -394,19 +407,21 @@ def generate_markdown(
         entries = _filter_previous_day(entries)
         if not entries:
             continue
-        lines.append(f"### {name}")
-        lines.append("")
+        bluesky_section.append(f"### {name}")
+        bluesky_section.append("")
         for entry in entries:
             message = entry.get("message") or entry.get("title") or "Untitled"
             link = entry.get("link") or ""
-            if link:
-                lines.append(f"- {message} [Post]({link})")
-            else:
-                lines.append(f"- {message}")
+            bluesky_section.append(f"- {_format_link_pair(message, link, 'Post', include_share=False)}")
+        bluesky_section.append("")
+    if bluesky_section:
+        lines.append("## BlueSky")
         lines.append("")
+        lines.extend(bluesky_section)
+
+    # GitHub Releases
+    github_section: List[str] = []
     if github_repos:
-        lines.append("## GitHub Releases")
-        lines.append("")
         for repo in github_repos:
             feed_url = f"https://github.com/{repo}/releases.atom"
             xml_bytes = _fetch_bytes(feed_url)
@@ -423,10 +438,15 @@ def generate_markdown(
             details = latest.get("message")
             link = latest.get("link") or f"https://github.com/{repo}/releases"
             if details and details != title:
-                lines.append(f"- {repo}: {title} — {details} [Release]({link})")
+                full_msg = f"{repo}: {title} — {details}"
             else:
-                lines.append(f"- {repo}: {title} [Release]({link})")
+                full_msg = f"{repo}: {title}"
+            github_section.append(f"- {_format_link_pair(full_msg, link, 'Release')}")
+    if github_section:
+        lines.append("## GitHub Releases")
         lines.append("")
+        lines.extend(github_section)
+
     return "\n".join(lines).rstrip() + "\n"
 
 

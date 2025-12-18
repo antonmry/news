@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anton’s News</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' ry='12' fill='%232563eb'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-family='sans-serif' font-size='32' fill='white'%3E%E2%84%B9%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "ComicShannsMono Nerd Font", "Comic Shanns Mono Nerd Font", "ComicShannsMonoNerdFont", monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    header {
+      padding: 24px 16px;
+      text-align: center;
+    }
+    header h1 { margin: 0; font-size: 1.75rem; letter-spacing: -0.02em; }
+    header .meta { color: var(--muted); margin-top: 4px; font-size: 0.95rem; }
+    .nav {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .nav button {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+    .nav button:hover { border-color: var(--accent); color: var(--accent); }
+    .nav button:disabled { opacity: 0.5; cursor: not-allowed; }
+    main {
+      max-width: 900px;
+      margin: 0 auto 48px;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+    }
+    #content h1:first-child { margin-top: 0; }
+    #content h1, #content h2, #content h3, #content h4 {
+      margin-top: 1.2em;
+      margin-bottom: 0.35em;
+      line-height: 1.3;
+    }
+    #content h1 { font-size: 1.4rem; }
+    #content h2 { font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 4px; position: relative; padding-left: 20px; }
+    #content h3 { font-size: 1.05rem; color: #0f172a; }
+    #content ul { padding-left: 1.2rem; }
+    #content li { margin-bottom: 6px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .error {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #fcd34d;
+      background: #fffbeb;
+      color: #92400e;
+      font-size: 0.95rem;
+    }
+    .collapsible { cursor: pointer; user-select: none; }
+    .collapsed + .section-body { display: none; }
+    .section-body { margin-bottom: 8px; }
+    .icon-link {
+      margin-left: 6px;
+      font-size: 0.9em;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .icon-link:hover { color: var(--accent); text-decoration: none; }
+    .icon-link .emoji { margin-right: 3px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Anton’s News</h1>
+    <div class="meta" id="status">Loading latest markdown…</div>
+    <div class="nav">
+      <button id="prevBtn">Previous day</button>
+      <button id="nextBtn">Next day</button>
+    </div>
+  </header>
+  <main>
+    <div class="card" id="content"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const statusEl = document.getElementById("status");
+    const contentEl = document.getElementById("content");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    let currentDate = null; // YYYY-MM-DD
+
+    async function fetchMarkdownByDate(dateStr) {
+      const filename = `${dateStr}.md`;
+      const res = await fetch(filename, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`Missing file ${filename}`);
+      return { filename, text: await res.text() };
+    }
+
+    function renderMarkdown(text, filename) {
+      marked.setOptions({ breaks: true });
+      const html = marked.parse(text);
+      contentEl.innerHTML = html;
+      // Open links in new tab
+      contentEl.querySelectorAll("a").forEach(a => {
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+      });
+      decorateInlineLinks();
+      enhanceCollapsible();
+      statusEl.textContent = `Showing ${filename}`;
+    }
+
+    function decorateInlineLinks() {
+      // Convert trailing [Label](url) [Bsky](url) into icons
+      const listItems = contentEl.querySelectorAll("li");
+      listItems.forEach(li => {
+        const links = li.querySelectorAll("a");
+        if (links.length >= 1) {
+          links.forEach(a => {
+            if (!a.dataset.decorated) {
+              const text = a.textContent || "";
+              let emoji = "🔗";
+              if (/Article/i.test(text)) emoji = "📰";
+              else if (/Video/i.test(text)) emoji = "▶️";
+              else if (/Post/i.test(text)) emoji = "💬";
+              else if (/Release/i.test(text)) emoji = "🚀";
+              a.innerHTML = `<span class="emoji">${emoji}</span>`;
+              a.classList.add("icon-link");
+              a.dataset.decorated = "true";
+            }
+          });
+        }
+        // If we have a Bsky link, give it a specific icon
+        links.forEach(a => {
+          const href = a.href || "";
+          if (href.includes("bsky.app/intent/compose") || /Bsky/i.test(a.textContent || "")) {
+            a.innerHTML = `<span class="emoji">🌐</span>`;
+            a.classList.add("icon-link");
+            a.dataset.decorated = "true";
+          }
+        });
+      });
+    }
+
+    function enhanceCollapsible() {
+      const h2s = Array.from(contentEl.querySelectorAll("h2"));
+      h2s.forEach(h2 => {
+        const sectionBody = document.createElement("div");
+        sectionBody.className = "section-body";
+        const indicator = document.createElement("span");
+        indicator.textContent = "−";
+        indicator.style.position = "absolute";
+        indicator.style.left = "0";
+        indicator.style.top = "0";
+        indicator.style.color = "var(--muted)";
+        h2.style.position = "relative";
+        h2.prepend(indicator);
+
+        let sibling = h2.nextSibling;
+        const toMove = [];
+        while (sibling && sibling.nodeType === 3 && sibling.textContent.trim() === "") {
+          const next = sibling.nextSibling;
+          sibling = next;
+        }
+        while (sibling && !(sibling.nodeType === 1 && sibling.tagName.toLowerCase() === "h2")) {
+          toMove.push(sibling);
+          sibling = sibling.nextSibling;
+        }
+        if (toMove.length === 0) return;
+        toMove.forEach(node => sectionBody.appendChild(node));
+        h2.after(sectionBody);
+        h2.classList.add("collapsible");
+        h2.addEventListener("click", () => {
+          h2.classList.toggle("collapsed");
+          indicator.textContent = h2.classList.contains("collapsed") ? "+" : "−";
+        });
+      });
+    }
+
+    async function findLatest() {
+      const today = new Date();
+      for (let offset = 1; offset <= 7; offset++) {
+        const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - offset));
+        const ds = d.toISOString().slice(0, 10);
+        try {
+          const { filename, text } = await fetchMarkdownByDate(ds);
+          currentDate = ds;
+          renderMarkdown(text, filename);
+          return;
+        } catch (_) {}
+      }
+      statusEl.textContent = "Could not load recent markdown.";
+      contentEl.innerHTML = '<div class="error">No recent markdown files found.</div>';
+    }
+
+    async function loadByOffset(days) {
+      if (!currentDate) return;
+      const [y, m, d] = currentDate.split("-").map(Number);
+      const base = new Date(Date.UTC(y, m - 1, d));
+      const target = new Date(base.getTime() + days * 86400000);
+      const ds = target.toISOString().slice(0, 10);
+      try {
+        const { filename, text } = await fetchMarkdownByDate(ds);
+        currentDate = ds;
+        renderMarkdown(text, filename);
+      } catch (err) {
+        statusEl.textContent = `No file for ${ds}`;
+      }
+    }
+
+    prevBtn.addEventListener("click", () => loadByOffset(-1));
+    nextBtn.addEventListener("click", () => loadByOffset(1));
+
+    findLatest();
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js").catch(console.error);
+    }
+  </script>
+</body>
+</html>
