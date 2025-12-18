@@ -29,7 +29,8 @@ jobs:
           python3 scripts/generate_rss_markdown.py \
             --list "https://bsky.app/profile/anton.galiglobal.com/lists/3m6ajdjbhnu27" \
             --github-input "config/github_repos.json" \
-            --blogs-input "config/blogs.json"
+            --blogs-input "config/blogs.json" \
+            --youtube-input "config/youtube.json"
 
       - name: Install uv
         run: python3 -m pip install --upgrade uv

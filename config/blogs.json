@@ -1,7 +1,9 @@
 [
   "https://datafusion.apache.org/blog/feed.xml",
-  "https://opentelemetry.io/blog/index.xml",
   "https://this-week-in-rust.org/rss.xml",
   "https://materializedview.io/feed",
-  "https://writethatblog.substack.com/feed"
+  "https://www.morling.dev/blog/index.xml",
+  "https://xuanwo.io/index.xml",
+  "https://writethatblog.substack.com/feed",
+  "https://opentelemetry.io/blog/index.xml"
 ]

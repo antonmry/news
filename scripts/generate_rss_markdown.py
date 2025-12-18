@@ -250,10 +250,52 @@ def _load_blog_feeds(path: str) -> List[Dict[str, str]]:
     return feeds
 
 
+def _extract_youtube_channel_id(url: str) -> str:
+    parsed = urlparse(url)
+    parts = [p for p in parsed.path.split("/") if p]
+    if len(parts) >= 2 and parts[0] == "channel":
+        return parts[1]
+    with _open_url(url) as resp:
+        html = resp.read().decode("utf-8", "ignore")
+    marker = '"channelId":"'
+    idx = html.find(marker)
+    if idx != -1:
+        start = idx + len(marker)
+        end = html.find('"', start)
+        if end != -1:
+            return html[start:end]
+    raise ValueError(f"Could not determine YouTube channel id from {url}")
+
+
+def _load_youtube_channels(path: str) -> List[Dict[str, str]]:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if isinstance(data, dict):
+        data = [data]
+    if not isinstance(data, list):
+        raise ValueError("YouTube JSON must be a list of channel URLs.")
+    channels: List[Dict[str, str]] = []
+    for idx, item in enumerate(data):
+        if isinstance(item, str):
+            url = item.strip()
+            name = ""
+        elif isinstance(item, dict):
+            url = str(item.get("url", "")).strip()
+            name = str(item.get("name", "")).strip()
+        else:
+            url = ""
+            name = ""
+        if not url:
+            raise ValueError(f"YouTube item {idx} is missing a url.")
+        channels.append({"url": url, "name": name})
+    return channels
+
+
 def generate_markdown(
     sources: List[Dict[str, str]],
     github_repos: List[str],
     blog_feeds: List[Dict[str, str]],
+    youtube_channels: List[Dict[str, str]],
     report_date: str,
 ) -> str:
     lines: List[str] = []
@@ -277,6 +319,29 @@ def generate_markdown(
                 link = entry.get("link") or ""
                 if link:
                     lines.append(f"- {message} [Article]({link})")
+                else:
+                    lines.append(f"- {message}")
+            lines.append("")
+    if youtube_channels:
+        lines.append("## YouTube")
+        lines.append("")
+        for channel in youtube_channels:
+            channel_id = _extract_youtube_channel_id(channel["url"])
+            feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+            with _open_url(feed_url) as resp:
+                xml_bytes = resp.read()
+            feed_title, entries = _parse_feed_with_title(xml_bytes)
+            entries = _filter_previous_day(entries)
+            if not entries:
+                continue
+            name = channel["name"] or feed_title or channel["url"]
+            lines.append(f"### {name}")
+            lines.append("")
+            for entry in entries:
+                message = entry.get("title") or entry.get("message") or "Untitled"
+                link = entry.get("link") or ""
+                if link:
+                    lines.append(f"- {message} [Video]({link})")
                 else:
                     lines.append(f"- {message}")
             lines.append("")
@@ -345,6 +410,10 @@ def main() -> int:
         "--blogs-input",
         help="Path to JSON list of blog feed URLs.",
     )
+    parser.add_argument(
+        "--youtube-input",
+        help="Path to JSON list of YouTube channel URLs.",
+    )
     args = parser.parse_args()
 
     report_date = (datetime.now(tz=timezone.utc).date() - timedelta(days=1)).isoformat()
@@ -352,7 +421,8 @@ def main() -> int:
     sources = _fetch_list_members(args.list)
     github_repos = _load_github_repos(args.github_input) if args.github_input else []
     blog_feeds = _load_blog_feeds(args.blogs_input) if args.blogs_input else []
-    markdown = generate_markdown(sources, github_repos, blog_feeds, report_date)
+    youtube_channels = _load_youtube_channels(args.youtube_input) if args.youtube_input else []
+    markdown = generate_markdown(sources, github_repos, blog_feeds, youtube_channels, report_date)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(markdown)
     return 0
