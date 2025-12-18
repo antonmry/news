@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import subprocess
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def run(cmd: list[str]) -> None:
@@ -8,7 +8,7 @@ def run(cmd: list[str]) -> None:
 
 
 def main() -> int:
-    report_date = (date.today() - timedelta(days=1)).isoformat()
+    report_date = (datetime.now(tz=timezone.utc).date() - timedelta(days=1)).isoformat()
     filename = f"{report_date}.md"
 
     run(["git", "config", "user.name", "github-actions[bot]"])

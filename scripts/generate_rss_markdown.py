@@ -196,29 +196,25 @@ def _parse_feed_with_title(xml_bytes: bytes) -> Tuple[Optional[str], List[Dict[s
     return title, _parse_atom_entries(root)
 
 
-def _to_local(dt: datetime) -> datetime:
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc).astimezone()
-    return dt.astimezone()
-
-
-def _yesterday_range() -> Dict[str, datetime]:
-    now_local = datetime.now().astimezone()
-    yesterday = (now_local - timedelta(days=1)).date()
-    start = datetime.combine(yesterday, time.min, tzinfo=now_local.tzinfo)
-    end = datetime.combine(yesterday, time.max, tzinfo=now_local.tzinfo)
+def _yesterday_range_utc() -> Dict[str, datetime]:
+    now_utc = datetime.now(tz=timezone.utc)
+    yesterday = (now_utc - timedelta(days=1)).date()
+    start = datetime.combine(yesterday, time.min, tzinfo=timezone.utc)
+    end = datetime.combine(yesterday, time.max, tzinfo=timezone.utc)
     return {"start": start, "end": end}
 
 
 def _filter_previous_day(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    window = _yesterday_range()
+    window = _yesterday_range_utc()
     filtered: List[Dict[str, Any]] = []
     for entry in entries:
         dt = entry.get("date")
         if not isinstance(dt, datetime):
             continue
-        local_dt = _to_local(dt)
-        if window["start"] <= local_dt <= window["end"]:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        utc_dt = dt.astimezone(timezone.utc)
+        if window["start"] <= utc_dt <= window["end"]:
             filtered.append(entry)
     return filtered
 
@@ -351,7 +347,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    report_date = (datetime.now().date() - timedelta(days=1)).isoformat()
+    report_date = (datetime.now(tz=timezone.utc).date() - timedelta(days=1)).isoformat()
     output_path = args.output or f"{report_date}.md"
     sources = _fetch_list_members(args.list)
     github_repos = _load_github_repos(args.github_input) if args.github_input else []

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
 try:
@@ -74,7 +74,7 @@ def main() -> int:
     parser.add_argument("--max-chars", type=int, default=300, help="Max characters per entry.")
     args = parser.parse_args()
 
-    report_date = (date.today() - timedelta(days=1)).isoformat()
+    report_date = (datetime.now(tz=timezone.utc).date() - timedelta(days=1)).isoformat()
     path = args.file or f"{report_date}.md"
 
     with open(path, "r", encoding="utf-8") as f:
