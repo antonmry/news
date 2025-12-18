@@ -1,0 +1,37 @@
+name: Daily News
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate daily markdown
+        run: |
+          python3 scripts/generate_rss_markdown.py \
+            --list "https://bsky.app/profile/anton.galiglobal.com/lists/3m6ajdjbhnu27" \
+            --github-input "scripts/github_repos.json" \
+            --blogs-input "scripts/blogs.json"
+
+      - name: Install uv
+        run: python3 -m pip install --upgrade uv
+
+      - name: Format markdown with rumdl
+        run: python3 scripts/format_daily_news.py
+
+      - name: Commit changes
+        run: python3 scripts/commit_daily_news.py
