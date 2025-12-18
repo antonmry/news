@@ -7,7 +7,7 @@ def main() -> int:
     report_date = (date.today() - timedelta(days=1)).isoformat()
     filename = f"{report_date}.md"
     subprocess.run(
-        ["uv", "tool", "run", "--from", "rumdl", "rumdl", "--fix", filename],
+        ["uv", "tool", "run", "--from", "rumdl", "rumdl", "fmt", filename],
         check=True,
     )
     return 0

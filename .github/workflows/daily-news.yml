@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  models: read
 
 jobs:
   build:
@@ -26,6 +27,9 @@ jobs:
             --list "https://bsky.app/profile/anton.galiglobal.com/lists/3m6ajdjbhnu27" \
             --github-input "scripts/github_repos.json" \
             --blogs-input "scripts/blogs.json"
+
+      - name: Summarize long entries
+        run: python3 scripts/summarize_long_entries.py --max-chars 300
 
       - name: Install uv
         run: python3 -m pip install --upgrade uv
