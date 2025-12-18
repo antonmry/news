@@ -30,6 +30,8 @@ jobs:
 
       - name: Summarize long entries
         run: python3 scripts/summarize_long_entries.py --max-chars 300
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
         run: python3 -m pip install --upgrade uv

@@ -87,11 +87,7 @@ def main() -> int:
 
     updated = []
     for line in lines:
-        try:
-            updated.append(_summarize_line(line, args.max_chars))
-        except Exception as exc:
-            print(f"Warning: {exc}", file=sys.stderr)
-            updated.append(line)
+        updated.append(_summarize_line(line, args.max_chars))
 
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(updated).rstrip() + "\n")
