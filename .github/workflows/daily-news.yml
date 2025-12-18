@@ -25,8 +25,8 @@ jobs:
         run: |
           python3 scripts/generate_rss_markdown.py \
             --list "https://bsky.app/profile/anton.galiglobal.com/lists/3m6ajdjbhnu27" \
-            --github-input "scripts/github_repos.json" \
-            --blogs-input "scripts/blogs.json"
+            --github-input "config/github_repos.json" \
+            --blogs-input "config/blogs.json"
 
       - name: Install uv
         run: python3 -m pip install --upgrade uv
