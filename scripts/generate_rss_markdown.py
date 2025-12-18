@@ -280,7 +280,7 @@ def generate_markdown(
                 message = entry.get("title") or entry.get("message") or "Untitled"
                 link = entry.get("link") or ""
                 if link:
-                    lines.append(f"- {message} [Link]({link})")
+                    lines.append(f"- {message} [Article]({link})")
                 else:
                     lines.append(f"- {message}")
             lines.append("")
@@ -302,7 +302,7 @@ def generate_markdown(
             message = entry.get("message") or entry.get("title") or "Untitled"
             link = entry.get("link") or ""
             if link:
-                lines.append(f"- {message} [Link]({link})")
+                lines.append(f"- {message} [Post]({link})")
             else:
                 lines.append(f"- {message}")
         lines.append("")
@@ -324,9 +324,9 @@ def generate_markdown(
             details = latest.get("message")
             link = latest.get("link") or f"https://github.com/{repo}/releases"
             if details and details != title:
-                lines.append(f"- {repo}: {title} — {details} [Link]({link})")
+                lines.append(f"- {repo}: {title} — {details} [Release]({link})")
             else:
-                lines.append(f"- {repo}: {title} [Link]({link})")
+                lines.append(f"- {repo}: {title} [Release]({link})")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

@@ -6,10 +6,12 @@ from datetime import date, timedelta
 def main() -> int:
     report_date = (date.today() - timedelta(days=1)).isoformat()
     filename = f"{report_date}.md"
-    subprocess.run(
+    result = subprocess.run(
         ["uv", "tool", "run", "--from", "rumdl", "rumdl", "fmt", filename],
-        check=True,
+        check=False,
     )
+    if result.returncode != 0:
+        print("Warning: rumdl reported issues after formatting.")
     return 0
 
 

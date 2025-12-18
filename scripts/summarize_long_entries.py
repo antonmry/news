@@ -16,11 +16,13 @@ except Exception as exc:  # pragma: no cover
 
 
 def _split_link(line: str) -> Tuple[str, str]:
-    marker = " [Link]("
-    idx = line.rfind(marker)
+    idx = line.rfind("](")
     if idx == -1:
         return line, ""
-    return line[:idx], line[idx:]
+    start = line.rfind(" [", 0, idx)
+    if start == -1:
+        return line, ""
+    return line[:start], line[start:]
 
 
 def _call_github_models(prompt: str, max_chars: int) -> str:
