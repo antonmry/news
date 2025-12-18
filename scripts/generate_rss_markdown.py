@@ -290,6 +290,11 @@ def _extract_youtube_channel_id(url: str) -> str:
         end = html.find('"', start)
         if end != -1:
             return html[start:end]
+    import re
+
+    m = re.search(r"(UC[a-zA-Z0-9_-]{20,})", html)
+    if m:
+        return m.group(1)
     return ""
 
 
