@@ -28,13 +28,13 @@ jobs:
             --github-input "scripts/github_repos.json" \
             --blogs-input "scripts/blogs.json"
 
-      - name: Summarize long entries
-        run: python3 scripts/summarize_long_entries.py --max-chars 300
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install uv
         run: python3 -m pip install --upgrade uv
+
+      - name: Summarize long entries
+        run: uv tool run --from azure-ai-inference python3 scripts/summarize_long_entries.py --max-chars 300
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Format markdown with rumdl
         run: python3 scripts/format_daily_news.py

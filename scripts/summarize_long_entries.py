@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import os
-import sys
 from datetime import date, timedelta
-from typing import Optional, Tuple
-from urllib.request import Request, urlopen
+from typing import Tuple
+
+try:
+    from azure.ai.inference import ChatCompletionsClient
+    from azure.ai.inference.models import SystemMessage, UserMessage
+    from azure.core.credentials import AzureKeyCredential
+except Exception as exc:  # pragma: no cover
+    raise RuntimeError(
+        "azure-ai-inference is required. Run with "
+        "`uv tool run --from azure-ai-inference python3 scripts/summarize_long_entries.py`."
+    ) from exc
 
 
 def _split_link(line: str) -> Tuple[str, str]:
@@ -20,44 +27,30 @@ def _call_github_models(prompt: str, max_chars: int) -> str:
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_MODELS_TOKEN")
     if not token:
         raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_MODELS_TOKEN.")
-    model = os.environ.get("GITHUB_MODELS_MODEL", "gpt-5-nano")
-    api_url = f"https://api.github.com/ai/models/{model}/inference"
+    model = os.environ.get("GITHUB_MODELS_MODEL", "openai/gpt-5-nano")
+    endpoint = os.environ.get("GITHUB_MODELS_ENDPOINT", "https://models.github.ai/inference")
 
-    payload = {
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "Summarize the text to fit within the requested character limit. "
-                    "Preserve key details, names, and links mentioned in the text. "
-                    "Return plain text only."
-                ),
-            },
-            {
-                "role": "user",
-                "content": f"Limit: {max_chars} characters.\nText: {prompt}",
-            },
-        ],
-        "temperature": 0.2,
-        "max_tokens": 200,
-    }
-
-    body = json.dumps(payload).encode("utf-8")
-    req = Request(
-        api_url,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-        method="POST",
+    client = ChatCompletionsClient(
+        endpoint=endpoint,
+        credential=AzureKeyCredential(token),
     )
-    with urlopen(req) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-    return content.strip()
+
+    response = client.complete(
+        messages=[
+            SystemMessage(
+                "Summarize the text to fit within the requested character limit. "
+                "Preserve key details, names, and links mentioned in the text. "
+                "Return plain text only."
+            ),
+            UserMessage(f"Limit: {max_chars} characters.\nText: {prompt}"),
+        ],
+        model=model,
+    )
+
+    content = (response.choices[0].message.content or "").strip()
+    if len(content) > max_chars:
+        content = content[: max_chars - 1].rstrip() + "…"
+    return content
 
 
 def _summarize_line(line: str, max_chars: int) -> str:
