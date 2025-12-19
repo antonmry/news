@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 from datetime import datetime, timedelta, timezone
 from typing import Tuple
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
 # Maximum input length to send to the API (to prevent timeouts with extremely long texts)
 MAX_INPUT_LENGTH = int(os.environ.get("SUMMARY_MAX_INPUT", "10000"))
@@ -14,10 +15,14 @@ MAX_INPUT_LENGTH = int(os.environ.get("SUMMARY_MAX_INPUT", "10000"))
 MAX_RETRIES = int(os.environ.get("SUMMARY_MAX_RETRIES", "3"))
 # Initial retry delay in seconds
 RETRY_DELAY = int(os.environ.get("SUMMARY_RETRY_DELAY", "2"))
+# Minimum delay between calls to reduce rate-limit errors
+MIN_CALL_INTERVAL = float(os.environ.get("SUMMARY_MIN_INTERVAL", "1.0"))
 # API call timeout in seconds
 API_TIMEOUT = int(os.environ.get("SUMMARY_TIMEOUT", "60"))
 # Maximum number of summaries per run to avoid runaway jobs
 MAX_SUMMARIES = int(os.environ.get("SUMMARY_MAX_CALLS", "50"))
+# Explicit User-Agent to keep GitHub Models happy
+USER_AGENT = os.environ.get("SUMMARY_USER_AGENT", "news-summarizer/1.0")
 
 
 def _split_link(line: str) -> Tuple[str, str]:
@@ -53,13 +58,26 @@ def _call_api(prompt: str, max_chars: int, token: str, endpoint: str, model: str
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
             "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+            "X-GitHub-Api-Version": "2023-07-07",
         },
         method="POST",
     )
-    with urlopen(req, timeout=API_TIMEOUT) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-    return content.strip()
+    try:
+        with urlopen(req, timeout=API_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        return content.strip()
+    except HTTPError as e:
+        detail = ""
+        try:
+            detail = e.read().decode("utf-8", "ignore")
+        except Exception:
+            detail = ""
+        msg = f"{e.code} {e.reason}".strip()
+        if detail:
+            msg = f"{msg}: {detail}"
+        raise RuntimeError(msg) from e
 
 
 def _call_with_timeout(prompt: str, max_chars: int, token: str, endpoint: str, model: str) -> str:
@@ -76,7 +94,7 @@ def _call_github_models(prompt: str, max_chars: int) -> str:
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_MODELS_TOKEN")
     if not token:
         raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_MODELS_TOKEN.")
-    model = os.environ.get("GITHUB_MODELS_MODEL", "openai/gpt-5-nano")
+    model = os.environ.get("GITHUB_MODELS_MODEL", "openai/gpt-4.1")
     endpoint = os.environ.get(
         "GITHUB_MODELS_ENDPOINT",
         "https://models.github.ai/inference/v1/chat/completions",
@@ -85,6 +103,16 @@ def _call_github_models(prompt: str, max_chars: int) -> str:
     if len(prompt) > MAX_INPUT_LENGTH:
         prompt = prompt[:MAX_INPUT_LENGTH] + "..."
         print(f"[summarize] Warning: Input truncated to {MAX_INPUT_LENGTH} characters", flush=True)
+
+    # Simple pacing to avoid hammering the endpoint
+    if MIN_CALL_INTERVAL > 0:
+        now = time.monotonic()
+        last = _call_github_models._last_call  # type: ignore[attr-defined]
+        elapsed = now - last if last else None
+        if elapsed is not None and elapsed < MIN_CALL_INTERVAL:
+            sleep_for = MIN_CALL_INTERVAL - elapsed
+            time.sleep(sleep_for)
+    _call_github_models._last_call = time.monotonic()  # type: ignore[attr-defined]
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -96,7 +124,15 @@ def _call_github_models(prompt: str, max_chars: int) -> str:
             is_last = attempt >= MAX_RETRIES - 1
             # crude check for rate limit; backoff and retry
             if not is_last and ("429" in str(e) or "rate" in str(e).lower()):
-                delay = RETRY_DELAY * (2 ** attempt)
+                retry_after = getattr(e, "headers", None)
+                delay = None
+                if retry_after:
+                    try:
+                        delay = int(retry_after.get("Retry-After", "0"))
+                    except Exception:
+                        delay = None
+                if delay is None or delay <= 0:
+                    delay = RETRY_DELAY * (2 ** attempt)
                 print(f"[summarize] Rate limited (attempt {attempt + 1}/{MAX_RETRIES}): {e}. Backing off {delay}s...", flush=True)
                 time.sleep(delay)
                 continue
@@ -138,7 +174,7 @@ def main() -> int:
 
     print(
         f"[summarize] Config: file={path}, max_chars={args.max_chars}, "
-        f"timeout={API_TIMEOUT}s, max_calls={MAX_SUMMARIES}, max_input={MAX_INPUT_LENGTH}, retries={MAX_RETRIES}",
+        f"timeout={API_TIMEOUT}s, max_calls={MAX_SUMMARIES}, max_input={MAX_INPUT_LENGTH}, retries={MAX_RETRIES}, min_interval={MIN_CALL_INTERVAL}s",
         flush=True,
     )
     with open(path, "r", encoding="utf-8") as f:
@@ -172,4 +208,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    # Track last call timestamp for rate limiting
+    _call_github_models._last_call = 0.0  # type: ignore[attr-defined]
     raise SystemExit(main())
