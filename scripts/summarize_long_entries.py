@@ -38,14 +38,11 @@ def _split_link(line: str) -> Tuple[str, str]:
 
 def _call_api_with_timeout(client, messages, model):
     """Helper function to make API call with timeout using thread executor."""
-    try:
-        response = client.complete(
-            messages=messages,
-            model=model,
-        )
-        return response
-    except Exception as e:
-        raise
+    response = client.complete(
+        messages=messages,
+        model=model,
+    )
+    return response
 
 
 def _call_github_models(prompt: str, max_chars: int) -> str:
@@ -97,8 +94,6 @@ def _call_github_models(prompt: str, max_chars: int) -> str:
             else:
                 print(f"API call failed after {MAX_RETRIES} attempts: {e}")
                 raise
-
-    return ""
 
 
 def _summarize_line(line: str, max_chars: int) -> str:
