@@ -222,25 +222,47 @@
       contentEl.innerHTML = '<div class="error">No recent markdown files found.</div>';
     }
 
-    async function loadByOffset(days) {
-      if (!currentDate) return;
-      const [y, m, d] = currentDate.split("-").map(Number);
-      const base = new Date(Date.UTC(y, m - 1, d));
-      const target = new Date(base.getTime() + days * 86400000);
-      const ds = target.toISOString().slice(0, 10);
-      try {
-        const { filename, text } = await fetchMarkdownByDate(ds);
-        currentDate = ds;
-        renderMarkdown(text, filename);
-      } catch (err) {
-        statusEl.textContent = `No file for ${ds}`;
-      }
+  async function loadByOffset(days) {
+    if (!currentDate) return;
+    const [y, m, d] = currentDate.split("-").map(Number);
+    const base = new Date(Date.UTC(y, m - 1, d));
+    const target = new Date(base.getTime() + days * 86400000);
+    const ds = target.toISOString().slice(0, 10);
+    try {
+      const { filename, text } = await fetchMarkdownByDate(ds);
+      currentDate = ds;
+      renderMarkdown(text, filename);
+      prevBtn.style.visibility = "visible";
+      nextBtn.style.visibility = "visible";
+    } catch (err) {
+      statusEl.textContent = `No file for ${ds}`;
+      if (days < 0) prevBtn.style.visibility = "hidden";
+      if (days > 0) nextBtn.style.visibility = "hidden";
     }
+  }
 
-    prevBtn.addEventListener("click", () => loadByOffset(-1));
-    nextBtn.addEventListener("click", () => loadByOffset(1));
+  prevBtn.addEventListener("click", () => loadByOffset(-1));
+  nextBtn.addEventListener("click", () => loadByOffset(1));
 
-    findLatest();
+  async function updateNavVisibility() {
+    if (!currentDate) return;
+    const [y, m, d] = currentDate.split("-").map(Number);
+    const base = new Date(Date.UTC(y, m - 1, d));
+    const prevDate = new Date(base.getTime() - 86400000).toISOString().slice(0, 10);
+    const nextDate = new Date(base.getTime() + 86400000).toISOString().slice(0, 10);
+    const check = async (ds) => {
+      try {
+        const res = await fetch(`${ds}.md`, { method: "GET", cache: "no-cache" });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    };
+    prevBtn.style.visibility = (await check(prevDate)) ? "visible" : "hidden";
+    nextBtn.style.visibility = (await check(nextDate)) ? "visible" : "hidden";
+  }
+
+  findLatest().then(updateNavVisibility);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js").catch(console.error);

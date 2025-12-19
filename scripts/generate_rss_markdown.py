@@ -339,8 +339,6 @@ def generate_markdown(
     report_date: str,
 ) -> str:
     lines: List[str] = []
-    lines.append(f"# News {report_date}")
-    lines.append("")
     # Blogs
     blog_section: List[str] = []
     if blog_feeds:
