@@ -113,16 +113,35 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     const statusEl = document.getElementById("status");
-    const contentEl = document.getElementById("content");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    let currentDate = null; // YYYY-MM-DD
+  const contentEl = document.getElementById("content");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  let currentDate = null; // YYYY-MM-DD
 
-    async function fetchMarkdownByDate(dateStr) {
-      const filename = `${dateStr}.md`;
-      const res = await fetch(filename, { cache: "no-cache" });
-      if (!res.ok) throw new Error(`Missing file ${filename}`);
-      return { filename, text: await res.text() };
+  function getUrlDay() {
+    const params = new URLSearchParams(window.location.search);
+    const day = params.get("day");
+    if (!day) return null;
+    // Basic YYYY-MM-DD validation
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+    return day;
+  }
+
+  function setUrlDay(ds, { replace = false } = {}) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("day", ds);
+    if (replace) {
+      history.replaceState({}, "", url);
+    } else {
+      history.pushState({}, "", url);
+    }
+  }
+
+  async function fetchMarkdownByDate(dateStr) {
+    const filename = `${dateStr}.md`;
+    const res = await fetch(filename, { cache: "no-cache" });
+    if (!res.ok) throw new Error(`Missing file ${filename}`);
+    return { filename, text: await res.text() };
     }
 
     function renderMarkdown(text, filename) {
@@ -203,24 +222,39 @@
           h2.classList.toggle("collapsed");
           indicator.textContent = h2.classList.contains("collapsed") ? "+" : "−";
         });
-      });
-    }
+    });
+  }
 
-    async function findLatest() {
-      const today = new Date();
-      for (let offset = 1; offset <= 7; offset++) {
-        const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - offset));
-        const ds = d.toISOString().slice(0, 10);
-        try {
-          const { filename, text } = await fetchMarkdownByDate(ds);
-          currentDate = ds;
-          renderMarkdown(text, filename);
-          return;
-        } catch (_) {}
+  async function loadDate(ds, { updateUrl = true, replaceUrl = false, silent = false } = {}) {
+    try {
+      const { filename, text } = await fetchMarkdownByDate(ds);
+      currentDate = ds;
+      renderMarkdown(text, filename);
+      if (updateUrl) setUrlDay(ds, { replace: replaceUrl });
+      await updateNavVisibility(ds);
+      return true;
+    } catch (err) {
+      if (!silent) {
+        statusEl.textContent = `No file for ${ds}`;
+        contentEl.innerHTML = '<div class="error">No markdown found for that date.</div>';
       }
-      statusEl.textContent = "Could not load recent markdown.";
-      contentEl.innerHTML = '<div class="error">No recent markdown files found.</div>';
+      await updateNavVisibility(currentDate);
+      return false;
     }
+  }
+
+  async function findLatest() {
+    const today = new Date();
+    for (let offset = 1; offset <= 7; offset++) {
+      const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - offset));
+      const ds = d.toISOString().slice(0, 10);
+      const ok = await loadDate(ds, { updateUrl: true, replaceUrl: true, silent: true });
+      if (ok) return true;
+    }
+    statusEl.textContent = "Could not load recent markdown.";
+    contentEl.innerHTML = '<div class="error">No recent markdown files found.</div>';
+    return false;
+  }
 
   async function loadByOffset(days) {
     if (!currentDate) return;
@@ -228,12 +262,8 @@
     const base = new Date(Date.UTC(y, m - 1, d));
     const target = new Date(base.getTime() + days * 86400000);
     const ds = target.toISOString().slice(0, 10);
-    try {
-      const { filename, text } = await fetchMarkdownByDate(ds);
-      currentDate = ds;
-      renderMarkdown(text, filename);
-      await updateNavVisibility(ds);
-    } catch (err) {
+    const ok = await loadDate(ds, { updateUrl: true, replaceUrl: false });
+    if (!ok) {
       statusEl.textContent = `No file for ${ds}`;
       await updateNavVisibility(currentDate);
     }
@@ -266,7 +296,19 @@
     nextBtn.style.visibility = hasNext ? "visible" : "hidden";
   }
 
-  findLatest().then(() => updateNavVisibility(currentDate));
+  async function init() {
+    const urlDay = getUrlDay();
+    if (urlDay) {
+      const ok = await loadDate(urlDay, { updateUrl: true, replaceUrl: true });
+      if (ok) {
+        await updateNavVisibility(urlDay);
+        return;
+      }
+    }
+    await findLatest();
+  }
+
+  init();
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js").catch(console.error);
