@@ -36,9 +36,13 @@ jobs:
         run: python3 -m pip install --upgrade uv
 
       - name: Summarize long entries
-        run: uv tool run --from azure-ai-inference python3 scripts/summarize_long_entries.py --max-chars 300
+        run: timeout 600 uv tool run --from azure-ai-inference python3 scripts/summarize_long_entries.py --max-chars 300
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUMMARY_TIMEOUT: 30
+          SUMMARY_MAX_CALLS: 20
+          SUMMARY_MAX_RETRIES: 4
+          SUMMARY_RETRY_DELAY: 2
 
       - name: Format markdown with rumdl
         run: python3 scripts/format_daily_news.py
