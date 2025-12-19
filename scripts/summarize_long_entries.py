@@ -25,6 +25,15 @@ MAX_SUMMARIES = int(os.environ.get("SUMMARY_MAX_CALLS", "50"))
 USER_AGENT = os.environ.get("SUMMARY_USER_AGENT", "news-summarizer/1.0")
 
 
+def _wrap_summary(text: str) -> str:
+    """Return a Markdown-safe, quoted summary string."""
+    if not text:
+        return text
+    clean = " ".join(text.split())  # collapse whitespace/newlines
+    clean = clean.replace('"', "'").strip()
+    return f"\"{clean}\""
+
+
 def _split_link(line: str) -> Tuple[str, str]:
     idx = line.rfind("](")
     if idx == -1:
@@ -42,9 +51,10 @@ def _call_api(prompt: str, max_chars: int, token: str, endpoint: str, model: str
             {
                 "role": "system",
                 "content": (
-                    "Summarize the text to fit within the requested character limit. "
+                "Summarize the text to fit within the requested character limit. "
                     "Preserve key details, names, and links mentioned in the text. "
-                    "Return plain text only."
+                    "Return a single line of plain text without Markdown formatting or bullet markers. "
+                    "Do not add newlines or headings. Keep URLs untouched."
                 ),
             },
             {"role": "user", "content": f"Limit: {max_chars} characters.\nText: {prompt}"},
@@ -157,7 +167,8 @@ def _summarize_line(line: str, max_chars: int) -> str:
         if not summary:
             print("[summarize] Empty summary returned, keeping original line", flush=True)
             return line
-        return f"- {summary}{link_part}"
+        wrapped = _wrap_summary(summary)
+        return f"- {wrapped}{link_part}"
     except Exception as e:
         print(f"[summarize] Error summarizing line: {e}. Keeping original line.", flush=True)
         return line
