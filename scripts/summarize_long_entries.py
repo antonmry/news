@@ -2,6 +2,7 @@
 import argparse
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
@@ -21,6 +22,8 @@ MAX_INPUT_LENGTH = 10000
 MAX_RETRIES = 3
 # Initial retry delay in seconds
 RETRY_DELAY = 2
+# API call timeout in seconds
+API_TIMEOUT = 60
 
 
 def _split_link(line: str) -> Tuple[str, str]:
@@ -31,6 +34,18 @@ def _split_link(line: str) -> Tuple[str, str]:
     if start == -1:
         return line, ""
     return line[:start], line[start:]
+
+
+def _call_api_with_timeout(client, messages, model):
+    """Helper function to make API call with timeout using thread executor."""
+    try:
+        response = client.complete(
+            messages=messages,
+            model=model,
+        )
+        return response
+    except Exception as e:
+        raise
 
 
 def _call_github_models(prompt: str, max_chars: int) -> str:
@@ -50,22 +65,25 @@ def _call_github_models(prompt: str, max_chars: int) -> str:
         credential=AzureKeyCredential(token),
     )
 
+    messages = [
+        SystemMessage(
+            "Summarize the text to fit within the requested character limit. "
+            "Preserve key details, names, and links mentioned in the text. "
+            "Return plain text only."
+        ),
+        UserMessage(f"Limit: {max_chars} characters.\nText: {prompt}"),
+    ]
+
     # Retry logic with exponential backoff
     for attempt in range(MAX_RETRIES):
         try:
-            # Pass timeout via kwargs (Azure SDK standard approach)
-            response = client.complete(
-                messages=[
-                    SystemMessage(
-                        "Summarize the text to fit within the requested character limit. "
-                        "Preserve key details, names, and links mentioned in the text. "
-                        "Return plain text only."
-                    ),
-                    UserMessage(f"Limit: {max_chars} characters.\nText: {prompt}"),
-                ],
-                model=model,
-                timeout=60,  # 60 second timeout for API call
-            )
+            # Use ThreadPoolExecutor to enforce timeout
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_call_api_with_timeout, client, messages, model)
+                try:
+                    response = future.result(timeout=API_TIMEOUT)
+                except FuturesTimeoutError:
+                    raise TimeoutError(f"API call timed out after {API_TIMEOUT} seconds")
 
             content = (response.choices[0].message.content or "").strip()
             if len(content) > max_chars:
