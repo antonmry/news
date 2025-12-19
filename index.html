@@ -232,37 +232,41 @@
       const { filename, text } = await fetchMarkdownByDate(ds);
       currentDate = ds;
       renderMarkdown(text, filename);
-      prevBtn.style.visibility = "visible";
-      nextBtn.style.visibility = "visible";
+      await updateNavVisibility(ds);
     } catch (err) {
       statusEl.textContent = `No file for ${ds}`;
-      if (days < 0) prevBtn.style.visibility = "hidden";
-      if (days > 0) nextBtn.style.visibility = "hidden";
+      await updateNavVisibility(currentDate);
     }
   }
 
   prevBtn.addEventListener("click", () => loadByOffset(-1));
   nextBtn.addEventListener("click", () => loadByOffset(1));
 
-  async function updateNavVisibility() {
-    if (!currentDate) return;
-    const [y, m, d] = currentDate.split("-").map(Number);
+  async function fileExists(ds) {
+    try {
+      const res = await fetch(`${ds}.md`, { method: "GET", cache: "no-cache" });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function updateNavVisibility(dateStr = currentDate) {
+    if (!dateStr) {
+      prevBtn.style.visibility = "hidden";
+      nextBtn.style.visibility = "hidden";
+      return;
+    }
+    const [y, m, d] = dateStr.split("-").map(Number);
     const base = new Date(Date.UTC(y, m - 1, d));
     const prevDate = new Date(base.getTime() - 86400000).toISOString().slice(0, 10);
     const nextDate = new Date(base.getTime() + 86400000).toISOString().slice(0, 10);
-    const check = async (ds) => {
-      try {
-        const res = await fetch(`${ds}.md`, { method: "GET", cache: "no-cache" });
-        return res.ok;
-      } catch {
-        return false;
-      }
-    };
-    prevBtn.style.visibility = (await check(prevDate)) ? "visible" : "hidden";
-    nextBtn.style.visibility = (await check(nextDate)) ? "visible" : "hidden";
+    const [hasPrev, hasNext] = await Promise.all([fileExists(prevDate), fileExists(nextDate)]);
+    prevBtn.style.visibility = hasPrev ? "visible" : "hidden";
+    nextBtn.style.visibility = hasNext ? "visible" : "hidden";
   }
 
-  findLatest().then(updateNavVisibility);
+  findLatest().then(() => updateNavVisibility(currentDate));
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js").catch(console.error);
