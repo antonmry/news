@@ -3,17 +3,17 @@
     "https://sharpmars.leaflet.pub/rss"
   ],
   "compilers": [
-    "https://bernsteinbear.com/blog/index.xml",
+    "https://bernsteinbear.com/feed.xml",
     "https://wingolog.org/feed/atom",
-    "https://stefan-marr.de/atom.xml",
-    "https://tratt.net/laurie/blog/atom.xml",
-    "https://borretti.me/index.xml",
-    "https://codeconfessions.substack.com/feed"
+    "https://stefan-marr.de/feed/",
+    "https://tratt.net/laurie/news.rss",
+    "https://borretti.me/feed.xml",
+    "https://blog.codingconfessions.com/feed"
   ],
   "databases": [
     "https://materializedview.io/feed",
     "https://buttondown.email/jaffray/rss",
-    "https://ayende.com/blog/Feed/Rss",
+    "http://feeds.feedburner.com/AyendeRahien",
     "https://smalldatum.blogspot.com/feeds/posts/default?alt=rss",
     "https://tanelpoder.com/feed/",
     "https://transactional.blog/rss",
