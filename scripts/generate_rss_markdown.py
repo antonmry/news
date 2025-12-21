@@ -262,15 +262,18 @@ def _load_blog_feeds(path: str) -> List[Dict[str, str]]:
         if isinstance(item, str):
             url = item.strip()
             name = ""
+            tag = ""
         elif isinstance(item, dict):
             url = str(item.get("url", "")).strip()
             name = str(item.get("name", "")).strip()
+            tag = str(item.get("tag", "")).strip()
         else:
             url = ""
             name = ""
+            tag = ""
         if not url:
             raise ValueError(f"Blog item {idx} is missing a url.")
-        feeds.append({"url": url, "name": name})
+        feeds.append({"url": url, "name": name, "tag": tag})
     return feeds
 
 

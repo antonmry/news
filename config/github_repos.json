@@ -11,5 +11,7 @@
   "rust-lang/rust-analyzer",
   "rvben/rumdl",
   "tmux/tmux",
+  "apache/iggy",
+  "n0-computer/iroh",
   "zellij-org/zellij"
 ]
