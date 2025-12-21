@@ -1,60 +1,77 @@
-[
-  { "url": "https://datafusion.apache.org/blog/feed.xml", "tag": "data-engineering" },
-  { "url": "https://this-week-in-rust.org/rss.xml", "tag": "rust" },
-  { "url": "https://materializedview.io/feed", "tag": "databases" },
-  { "url": "https://www.morling.dev/blog/index.xml", "tag": "java" },
-  { "url": "https://xuanwo.io/index.xml", "tag": "storage" },
-  { "url": "https://writethatblog.substack.com/feed", "tag": "writing" },
-  { "url": "https://opentelemetry.io/blog/index.xml", "tag": "observability" },
-  { "url": "https://rmoff.net/index.xml", "tag": "data-engineering" },
-  { "url": "https://notes.eatonphil.com/rss.xml", "tag": "databases" },
-  { "url": "https://emptysqua.re/blog/index.xml", "tag": "databases" },
-  { "url": "https://feeds.feedburner.com/martinkl", "tag": "java" },
-
-  { "url": "https://eli.thegreenplace.net/feeds/all.atom.xml", "tag": "systems-programming" },
-  { "url": "https://nullprogram.com/feed/", "tag": "systems-programming" },
-  { "url": "https://justine.lol/rss.xml", "tag": "systems-programming" },
-  { "url": "https://flak.tedunangst.com/rss", "tag": "systems-programming" },
-  { "url": "https://zserge.com/rss.xml", "tag": "systems-programming" },
-  { "url": "https://lemire.me/blog/feed/", "tag": "systems-programming" },
-  { "url": "http://0x80.pl/rss.xml", "tag": "systems-programming" },
-  { "url": "https://richardstartin.github.io/feed.xml", "tag": "systems-programming" },
-  { "url": "https://tylerneely.com/index.xml", "tag": "systems-programming" },
-  { "url": "https://awesomekling.github.io/feed.xml", "tag": "systems-programming" },
-
-  { "url": "https://www.hillelwayne.com/rss.xml", "tag": "formal-methods" },
-
-  { "url": "https://utcc.utoronto.ca/~cks/space/blog/atomfull", "tag": "systems" },
-  { "url": "https://michael.stapelberg.ch/atom.xml", "tag": "systems" },
-  { "url": "https://www.brendangregg.com/blog/rss.xml", "tag": "systems" },
-  { "url": "https://rachelbythebay.com/w/rss.xml", "tag": "systems" },
-  { "url": "https://sirupsen.com/atom.xml", "tag": "systems" },
-  { "url": "https://danluu.com/atom.xml", "tag": "systems" },
-  { "url": "https://newsletter.micahlerner.com/feed", "tag": "systems" },
-  { "url": "https://jmmv.dev/atom.xml", "tag": "systems" },
-  { "url": "https://www.evanjones.ca/index.rss", "tag": "systems" },
-
-  { "url": "https://bernsteinbear.com/blog/index.xml", "tag": "compilers" },
-  { "url": "https://wingolog.org/feed/atom", "tag": "compilers" },
-  { "url": "https://stefan-marr.de/atom.xml", "tag": "compilers" },
-  { "url": "https://tratt.net/laurie/blog/atom.xml", "tag": "compilers" },
-  { "url": "https://borretti.me/index.xml", "tag": "compilers" },
-  { "url": "https://codeconfessions.substack.com/feed", "tag": "compilers" },
-
-  { "url": "https://buttondown.email/jaffray/rss", "tag": "databases" },
-  { "url": "https://ayende.com/blog/Feed/Rss", "tag": "databases" },
-  { "url": "https://smalldatum.blogspot.com/feeds/posts/default?alt=rss", "tag": "databases" },
-  { "url": "https://tanelpoder.com/feed/", "tag": "databases" },
-  { "url": "https://transactional.blog/rss", "tag": "databases" },
-  { "url": "https://www.scattered-thoughts.net/atom.xml", "tag": "databases" },
-  { "url": "https://andygrove.io/index.xml", "tag": "databases" },
-  { "url": "http://blog.hydromatic.net/atom.xml", "tag": "databases" },
-
-  { "url": "https://muratbuffalo.blogspot.com/feeds/posts/default?alt=rss", "tag": "distributed-systems" },
-  { "url": "https://jack-vanlightly.com/blog?format=rss", "tag": "distributed-systems" },
-  { "url": "https://distributed-computing-musings.com/feeds/posts/default?alt=rss", "tag": "distributed-systems" },
-  { "url": "https://brooker.co.za/blog/atom.xml", "tag": "distributed-systems" },
-  { "url": "https://blog.acolyer.org/feed/", "tag": "distributed-systems" },
-  { "url": "https://charap.co/index.xml", "tag": "distributed-systems" },
-  { "url": "https://dbmsmusings.blogspot.com/feeds/posts/default?alt=rss", "tag": "distributed-systems" }
-]
+{
+  "atproto": [
+    "https://sharpmars.leaflet.pub/rss"
+  ],
+  "compilers": [
+    "https://bernsteinbear.com/blog/index.xml",
+    "https://wingolog.org/feed/atom",
+    "https://stefan-marr.de/atom.xml",
+    "https://tratt.net/laurie/blog/atom.xml",
+    "https://borretti.me/index.xml",
+    "https://codeconfessions.substack.com/feed"
+  ],
+  "databases": [
+    "https://materializedview.io/feed",
+    "https://buttondown.email/jaffray/rss",
+    "https://ayende.com/blog/Feed/Rss",
+    "https://smalldatum.blogspot.com/feeds/posts/default?alt=rss",
+    "https://tanelpoder.com/feed/",
+    "https://transactional.blog/rss",
+    "https://www.scattered-thoughts.net/atom.xml",
+    "https://andygrove.io/index.xml",
+    "http://blog.hydromatic.net/atom.xml",
+    "https://datafusion.apache.org/blog/feed.xml",
+    "https://rmoff.net/index.xml",
+    "https://notes.eatonphil.com/rss.xml",
+    "https://emptysqua.re/blog/index.xml",
+    "https://dbmsmusings.blogspot.com/feeds/posts/default?alt=rss"
+  ],
+  "distributed-systems": [
+    "https://muratbuffalo.blogspot.com/feeds/posts/default?alt=rss",
+    "https://jack-vanlightly.com/blog?format=rss",
+    "https://distributed-computing-musings.com/feeds/posts/default?alt=rss",
+    "https://brooker.co.za/blog/atom.xml",
+    "https://blog.acolyer.org/feed/",
+    "https://charap.co/index.xml"
+  ],
+  "observability": [
+    "https://opentelemetry.io/blog/index.xml"
+  ],
+  "rust": [
+    "https://this-week-in-rust.org/rss.xml",
+    "https://materializedview.io/feed"
+  ],
+  "systems": [
+    "https://utcc.utoronto.ca/~cks/space/blog/atomfull",
+    "https://michael.stapelberg.ch/atom.xml",
+    "https://www.brendangregg.com/blog/rss.xml",
+    "https://rachelbythebay.com/w/rss.xml",
+    "https://sirupsen.com/atom.xml",
+    "https://danluu.com/atom.xml",
+    "https://newsletter.micahlerner.com/feed",
+    "https://jmmv.dev/atom.xml",
+    "https://www.evanjones.ca/index.rss"
+  ],
+  "systems-programming": [
+    "https://eli.thegreenplace.net/feeds/all.atom.xml",
+    "https://nullprogram.com/feed/",
+    "https://justine.lol/rss.xml",
+    "https://flak.tedunangst.com/rss",
+    "https://zserge.com/rss.xml",
+    "https://lemire.me/blog/feed/",
+    "http://0x80.pl/rss.xml",
+    "https://richardstartin.github.io/feed.xml",
+    "https://tylerneely.com/index.xml",
+    "https://awesomekling.github.io/feed.xml"
+  ],
+  "writing": [
+    "https://writethatblog.substack.com/feed"
+  ],
+  "java": [
+    "https://www.morling.dev/blog/index.xml",
+    "https://feeds.feedburner.com/martinkl"
+  ],
+  "storage": [
+    "https://xuanwo.io/index.xml"
+  ]
+}

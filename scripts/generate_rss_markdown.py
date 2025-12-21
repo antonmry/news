@@ -47,21 +47,24 @@ def _open_url(url: str):
     if parsed.netloc.endswith("github.com") and token:
         headers["Authorization"] = f"Bearer {token}"
     req = Request(url, headers=headers)
-    return urlopen(req)
+    timeout = float(os.environ.get("NEWS_FETCH_TIMEOUT", "15"))
+    return urlopen(req, timeout=timeout)
 
 
-def _fetch_bytes(url: str) -> Optional[bytes]:
+def _fetch_bytes(url: str) -> Tuple[Optional[bytes], Optional[str]]:
     try:
         with _open_url(url) as resp:
-            return resp.read()
+            return resp.read(), None
     except HTTPError as e:
         reason = f"{e.code} {e.reason}".strip()
         print(f"warning: could not fetch {url} ({reason})", file=sys.stderr)
+        return None, reason
     except URLError as e:
         print(f"warning: could not fetch {url} ({e.reason})", file=sys.stderr)
+        return None, str(e.reason)
     except Exception as e:
         print(f"warning: could not fetch {url}: {e}", file=sys.stderr)
-    return None
+        return None, str(e)
 
 
 def _clean_text(text: Optional[str]) -> str:
@@ -220,6 +223,16 @@ def _parse_feed_with_title(xml_bytes: bytes) -> Tuple[Optional[str], List[Dict[s
     return title, _parse_atom_entries(root)
 
 
+def _safe_parse_feed_with_title(xml_bytes: bytes, source: str) -> Tuple[Optional[str], List[Dict[str, Any]]]:
+    try:
+        return _parse_feed_with_title(xml_bytes)
+    except ET.ParseError as e:
+        print(f"warning: could not parse feed for {source}: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"warning: unexpected parse error for {source}: {e}", file=sys.stderr)
+    return None, []
+
+
 def _yesterday_range_utc() -> Dict[str, datetime]:
     now_utc = datetime.now(tz=timezone.utc)
     yesterday = (now_utc - timedelta(days=1)).date()
@@ -253,11 +266,34 @@ def _latest_entry(entries: Sequence[Dict[str, Any]]) -> Optional[Dict[str, Any]]
 def _load_blog_feeds(path: str) -> List[Dict[str, str]]:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
+    feeds: List[Dict[str, str]] = []
+
+    # Support new grouped shape: { "tag": ["url", {...}] }
+    if isinstance(data, dict) and all(isinstance(v, list) for v in data.values()):
+        for tag_key, items in data.items():
+            for idx, item in enumerate(items):
+                if isinstance(item, str):
+                    url = item.strip()
+                    name = ""
+                    tag = str(tag_key).strip()
+                elif isinstance(item, dict):
+                    url = str(item.get("url", "")).strip()
+                    name = str(item.get("name", "")).strip()
+                    tag = str(item.get("tag", "") or tag_key).strip()
+                else:
+                    url = ""
+                    name = ""
+                    tag = str(tag_key).strip()
+                if not url:
+                    raise ValueError(f"Blog item {tag_key}[{idx}] is missing a url.")
+                feeds.append({"url": url, "name": name, "tag": tag})
+        return feeds
+
+    # Backward compatibility: list of strings or objects (optionally single object)
     if isinstance(data, dict):
         data = [data]
     if not isinstance(data, list):
-        raise ValueError("Blogs JSON must be a list of feed URLs.")
-    feeds: List[Dict[str, str]] = []
+        raise ValueError("Blogs JSON must be a list of feed URLs or a tag->list mapping.")
     for idx, item in enumerate(data):
         if isinstance(item, str):
             url = item.strip()
@@ -282,7 +318,7 @@ def _extract_youtube_channel_id(url: str) -> str:
     parts = [p for p in parsed.path.split("/") if p]
     if len(parts) >= 2 and parts[0] == "channel":
         return parts[1]
-    html_bytes = _fetch_bytes(url)
+    html_bytes, _ = _fetch_bytes(url)
     if not html_bytes:
         return ""
     html = html_bytes.decode("utf-8", "ignore")
@@ -342,14 +378,21 @@ def generate_markdown(
     report_date: str,
 ) -> str:
     lines: List[str] = []
+    failures: List[Dict[str, str]] = []
+
+    def record_failure(category: str, name: str, url: str, detail: str):
+        failures.append({"category": category, "name": name, "url": url, "detail": detail})
     # Blogs
     blog_section: List[str] = []
     if blog_feeds:
         for feed in blog_feeds:
-            xml_bytes = _fetch_bytes(feed["url"])
+            xml_bytes, err = _fetch_bytes(feed["url"])
             if not xml_bytes:
+                record_failure("blog", feed.get("name") or feed["url"], feed["url"], err or "fetch failed")
                 continue
-            feed_title, entries = _parse_feed_with_title(xml_bytes)
+            feed_title, entries = _safe_parse_feed_with_title(xml_bytes, feed["url"])
+            if not entries and feed_title is None:
+                record_failure("blog", feed.get("name") or feed["url"], feed["url"], "parse failed")
             entries = _filter_previous_day(entries)
             if not entries:
                 continue
@@ -373,12 +416,16 @@ def generate_markdown(
             channel_id = _extract_youtube_channel_id(channel["url"])
             if not channel_id:
                 print(f"warning: skipping YouTube channel {channel['url']} (could not resolve id)", file=sys.stderr)
+                record_failure("youtube", channel.get("name") or channel["url"], channel["url"], "could not resolve channel id")
                 continue
             feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-            xml_bytes = _fetch_bytes(feed_url)
+            xml_bytes, err = _fetch_bytes(feed_url)
             if not xml_bytes:
+                record_failure("youtube", channel.get("name") or channel["url"], feed_url, err or "fetch failed")
                 continue
-            feed_title, entries = _parse_feed_with_title(xml_bytes)
+            feed_title, entries = _safe_parse_feed_with_title(xml_bytes, feed_url)
+            if not entries and feed_title is None:
+                record_failure("youtube", channel.get("name") or channel["url"], feed_url, "parse failed")
             entries = _filter_previous_day(entries)
             if not entries:
                 continue
@@ -400,10 +447,14 @@ def generate_markdown(
     for source in sources:
         name = source["name"]
         url = source["url"]
-        xml_bytes = _fetch_bytes(url)
+        xml_bytes, err = _fetch_bytes(url)
         if not xml_bytes:
+            record_failure("bluesky", name, url, err or "fetch failed")
             continue
-        entries = _parse_feed(xml_bytes)
+        _, entries = _safe_parse_feed_with_title(xml_bytes, url)
+        if not entries:
+            record_failure("bluesky", name, url, "parse failed")
+            continue
         entries.sort(key=lambda e: e.get("date") or datetime.min, reverse=True)
         entries = _filter_previous_day(entries)
         if not entries:
@@ -425,10 +476,14 @@ def generate_markdown(
     if github_repos:
         for repo in github_repos:
             feed_url = f"https://github.com/{repo}/releases.atom"
-            xml_bytes = _fetch_bytes(feed_url)
+            xml_bytes, err = _fetch_bytes(feed_url)
             if not xml_bytes:
+                record_failure("github", repo, feed_url, err or "fetch failed")
                 continue
-            entries = _parse_feed(xml_bytes)
+            _, entries = _safe_parse_feed_with_title(xml_bytes, feed_url)
+            if not entries:
+                record_failure("github", repo, feed_url, "parse failed")
+                continue
             entries = _filter_previous_day(entries)
             if not entries:
                 continue
@@ -447,6 +502,25 @@ def generate_markdown(
         lines.append("## GitHub Releases")
         lines.append("")
         lines.extend(github_section)
+
+    if failures:
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append("## Failed Sources")
+        lines.append("")
+        for failure in failures:
+            cat = failure.get("category", "")
+            name = failure.get("name", "")
+            url = failure.get("url", "")
+            detail = failure.get("detail", "")
+            parts = [p for p in [cat, name] if p]
+            label = " — ".join(parts) if parts else url
+            if detail:
+                lines.append(f"- {label} ({url}): {detail}")
+            else:
+                lines.append(f"- {label} ({url})")
+        lines.append("")
+        print(f"warning: {len(failures)} sources failed (see Failed Sources section)", file=sys.stderr)
 
     return "\n".join(lines).rstrip() + "\n"
 
