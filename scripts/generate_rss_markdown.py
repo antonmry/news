@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import gzip
 import json
 import os
 import re
@@ -40,8 +41,15 @@ def _parse_date(text: Optional[str]) -> Optional[datetime]:
 def _open_url(url: str):
     parsed = urlparse(url)
     headers = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) news-rss/1.0 (+https://github.com/antonmry/news)",
+        # Closer to a recent Chrome UA; avoid custom suffixes that trigger WAFs
+        "User-Agent": (
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
         "Accept": "application/xml,application/rss+xml,application/atom+xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive",
     }
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if parsed.netloc.endswith("github.com") and token:
@@ -51,10 +59,21 @@ def _open_url(url: str):
     return urlopen(req, timeout=timeout)
 
 
+def _read_body(resp) -> bytes:
+    data = resp.read()
+    encoding = (resp.headers.get("Content-Encoding") or "").lower()
+    if "gzip" in encoding:
+        try:
+            data = gzip.decompress(data)
+        except Exception:
+            pass
+    return data
+
+
 def _fetch_bytes(url: str) -> Tuple[Optional[bytes], Optional[str]]:
     try:
         with _open_url(url) as resp:
-            return resp.read(), None
+            return _read_body(resp), None
     except HTTPError as e:
         reason = f"{e.code} {e.reason}".strip()
         print(f"warning: could not fetch {url} ({reason})", file=sys.stderr)
@@ -86,7 +105,7 @@ def _parse_list_url(list_url: str) -> Dict[str, str]:
 def _resolve_handle(handle: str) -> str:
     url = f"https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle={handle}"
     with _open_url(url) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+        data = json.loads(_read_body(resp).decode("utf-8"))
     did = data.get("did")
     if not did:
         raise ValueError(f"Could not resolve handle: {handle}")
@@ -99,7 +118,7 @@ def _fetch_list_members(list_url: str) -> List[Dict[str, str]]:
     list_uri = f"at://{did}/app.bsky.graph.list/{info['list_id']}"
     api_url = f"https://public.api.bsky.app/xrpc/app.bsky.graph.getList?list={list_uri}"
     with _open_url(api_url) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+        data = json.loads(_read_body(resp).decode("utf-8"))
     members: List[Dict[str, str]] = []
     for item in data.get("items", []):
         subject = item.get("subject") or {}
