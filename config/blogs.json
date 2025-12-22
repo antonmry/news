@@ -29,7 +29,7 @@
     "https://muratbuffalo.blogspot.com/feeds/posts/default?alt=rss",
     "https://jack-vanlightly.com/blog?format=rss",
     "https://brooker.co.za/blog/atom.xml",
-    "https://blog.acolyer.org/feed/",
+    "https://blog.acolyer.org/feed/"
   ],
   "observability": [
     "https://opentelemetry.io/blog/index.xml"
