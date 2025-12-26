@@ -1,15 +1,4 @@
 {
-  "atproto": [
-    "https://sharpmars.leaflet.pub/rss"
-  ],
-  "compilers": [
-    "https://bernsteinbear.com/feed.xml",
-    "https://wingolog.org/feed/atom",
-    "https://stefan-marr.de/feed/",
-    "https://tratt.net/laurie/news.rss",
-    "https://borretti.me/feed.xml",
-    "https://blog.codingconfessions.com/feed"
-  ],
   "databases": [
     "https://materializedview.io/feed",
     "https://buttondown.email/jaffray/rss",
@@ -26,17 +15,12 @@
     "https://dbmsmusings.blogspot.com/feeds/posts/default?alt=rss"
   ],
   "distributed-systems": [
+    "https://feeds.feedburner.com/martinkl",
+    "https://www.morling.dev/blog/index.xml",
     "https://muratbuffalo.blogspot.com/feeds/posts/default?alt=rss",
     "https://jack-vanlightly.com/blog?format=rss",
     "https://brooker.co.za/blog/atom.xml",
     "https://blog.acolyer.org/feed/"
-  ],
-  "observability": [
-    "https://opentelemetry.io/blog/index.xml"
-  ],
-  "rust": [
-    "https://this-week-in-rust.org/rss.xml",
-    "https://materializedview.io/feed"
   ],
   "systems": [
     "https://michael.stapelberg.ch/feed.xml",
@@ -45,9 +29,7 @@
     "https://danluu.com/atom.xml",
     "https://newsletter.micahlerner.com/feed",
     "https://jmmv.dev/feed.xml",
-    "https://www.evanjones.ca/index.rss"
-  ],
-  "systems-programming": [
+    "https://www.evanjones.ca/index.rss",
     "https://eli.thegreenplace.net/feeds/all.atom.xml",
     "https://nullprogram.com/feed/",
     "https://justine.lol/rss.xml",
@@ -58,14 +40,26 @@
     "https://richardstartin.github.io/feed.xml",
     "https://awesomekling.github.io/feed.xml"
   ],
-  "writing": [
+  "compilers": [
+    "https://bernsteinbear.com/feed.xml",
+    "https://wingolog.org/feed/atom",
+    "https://stefan-marr.de/feed/",
+    "https://tratt.net/laurie/news.rss",
+    "https://borretti.me/feed.xml",
+    "https://blog.codingconfessions.com/feed"
+  ],
+  "observability": [
+    "https://opentelemetry.io/blog/index.xml"
+  ],
+  "rust": [
+    "https://this-week-in-rust.org/rss.xml",
+    "https://xuanwo.io/index.xml",
+    "https://www.ralfj.de/blog/feed.xml"
+  ],
+  "atproto": [
+    "https://sharpmars.leaflet.pub/rss"
+  ],
+  "others": [
     "https://writethatblog.substack.com/feed"
-  ],
-  "java": [
-    "https://www.morling.dev/blog/index.xml",
-    "https://feeds.feedburner.com/martinkl"
-  ],
-  "storage": [
-    "https://xuanwo.io/index.xml"
   ]
 }
