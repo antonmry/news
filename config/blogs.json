@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
        "databases": [
               "https://materializedview.io/feed",
               "https://buttondown.email/jaffray/rss",
@@ -63,4 +64,73 @@
        "others": [
               "https://writethatblog.substack.com/feed"
        ]
+=======
+  "compilers": [
+    "https://bernsteinbear.com/feed.xml",
+    "https://wingolog.org/feed/atom",
+    "https://stefan-marr.de/feed/",
+    "https://tratt.net/laurie/news.rss",
+    "https://borretti.me/feed.xml",
+    "https://blog.codingconfessions.com/feed"
+  ],
+  "databases": [
+    "https://materializedview.io/feed",
+    "https://buttondown.email/jaffray/rss",
+    "http://feeds.feedburner.com/AyendeRahien",
+    "https://smalldatum.blogspot.com/feeds/posts/default?alt=rss",
+    "https://tanelpoder.com/feed/",
+    "https://transactional.blog/feed.xml",
+    "https://www.scattered-thoughts.net/atom.xml",
+    "http://blog.hydromatic.net/feed.xml",
+    "https://datafusion.apache.org/blog/feed.xml",
+    "https://rmoff.net/index.xml",
+    "https://notes.eatonphil.com/rss.xml",
+    "https://emptysqua.re/blog/index.xml",
+    "https://dbmsmusings.blogspot.com/feeds/posts/default?alt=rss"
+  ],
+  "distributed-systems": [
+    "https://www.morling.dev/blog/index.xml",
+    "https://feeds.feedburner.com/martinkl",
+    "https://muratbuffalo.blogspot.com/feeds/posts/default?alt=rss",
+    "https://jack-vanlightly.com/blog?format=rss",
+    "https://brooker.co.za/blog/atom.xml",
+    "https://blog.acolyer.org/feed/"
+  ],
+  "programming": [
+    "https://xuanwo.io/index.xml",
+    "https://kill-the-newsletter.com/feeds/m7ki79zsr1bf46mapgtz.xml",
+    "https://this-week-in-rust.org/rss.xml",
+    "https://materializedview.io/feed"
+  ],
+  "systems": [
+    "https://michael.stapelberg.ch/feed.xml",
+    "https://www.brendangregg.com/blog/rss.xml",
+    "https://sirupsen.com/atom.xml",
+    "https://danluu.com/atom.xml",
+    "https://newsletter.micahlerner.com/feed",
+    "https://jmmv.dev/feed.xml",
+    "https://www.evanjones.ca/index.rss"
+  ],
+  "systems-programming": [
+    "https://eli.thegreenplace.net/feeds/all.atom.xml",
+    "https://nullprogram.com/feed/",
+    "https://justine.lol/rss.xml",
+    "https://flak.tedunangst.com/rss",
+    "https://zserge.com/rss.xml",
+    "https://lemire.me/blog/feed/",
+    "http://0x80.pl/feed.xml",
+    "https://richardstartin.github.io/feed.xml",
+    "https://awesomekling.github.io/feed.xml"
+  ],
+  "observability": [
+    "https://opentelemetry.io/blog/index.xml"
+  ],
+  "atproto": [
+    "https://sharpmars.leaflet.pub/rss",
+    "https://www.ralfj.de/blog/feed.xml"
+  ],
+  "writing": [
+    "https://writethatblog.substack.com/feed"
+  ]
+>>>>>>> fb4c7e7 (chore(config): rearrange blog feed categories)
 }
