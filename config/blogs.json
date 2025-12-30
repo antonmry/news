@@ -63,7 +63,8 @@
     "https://sharpmars.leaflet.pub/rss",
     "https://www.ralfj.de/blog/feed.xml"
   ],
-  "writing": [
-    "https://writethatblog.substack.com/feed"
+  "others": [
+    "https://writethatblog.substack.com/feed",
+    "https://bower.sh/rss"
   ]
 }
