@@ -41,26 +41,25 @@
     "http://0x80.pl/feed.xml",
     "https://richardstartin.github.io/feed.xml",
     "https://awesomekling.github.io/feed.xml",
-    "https://michael.stapelberg.ch/feed.xml",
     "https://www.brendangregg.com/blog/rss.xml",
     "https://sirupsen.com/atom.xml",
     "https://danluu.com/atom.xml",
     "https://newsletter.micahlerner.com/feed",
     "https://jmmv.dev/feed.xml",
     "https://www.evanjones.ca/index.rss",
-    "https://www.ralfj.de/blog/feed.xml"
+    "https://www.ralfj.de/blog/feed.xml",
+    "https://opentelemetry.io/blog/index.xml"
   ],
   "programming": [
     "https://xuanwo.io/index.xml",
     "https://kill-the-newsletter.com/feeds/m7ki79zsr1bf46mapgtz.xml",
     "https://this-week-in-rust.org/rss.xml"
   ],
-  "observability": [
-    "https://opentelemetry.io/blog/index.xml"
-  ],
   "productivity": [
     "https://sharpmars.leaflet.pub/rss",
+    "https://michael.stapelberg.ch/feed.xml",
     "https://linkarzu.com/feed.xml",
+    "https://fdp.io/rss.xml",
     "https://bower.sh/rss"
   ]
 }
