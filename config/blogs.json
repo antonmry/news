@@ -5,6 +5,7 @@
     "https://stefan-marr.de/feed/",
     "https://tratt.net/laurie/news.rss",
     "https://borretti.me/feed.xml",
+    "https://planet.igalia.com/rss20.xml",
     "https://blog.codingconfessions.com/feed"
   ],
   "databases": [
@@ -17,10 +18,10 @@
     "https://www.scattered-thoughts.net/atom.xml",
     "http://blog.hydromatic.net/feed.xml",
     "https://datafusion.apache.org/blog/feed.xml",
-    "https://rmoff.net/index.xml",
     "https://notes.eatonphil.com/rss.xml",
     "https://emptysqua.re/blog/index.xml",
-    "https://dbmsmusings.blogspot.com/feeds/posts/default?alt=rss"
+    "https://dbmsmusings.blogspot.com/feeds/posts/default?alt=rss",
+    "https://www.craigkerstiens.com/index.xml"
   ],
   "distributed-systems": [
     "https://www.morling.dev/blog/index.xml",
@@ -48,20 +49,29 @@
     "https://jmmv.dev/feed.xml",
     "https://www.evanjones.ca/index.rss",
     "https://www.ralfj.de/blog/feed.xml",
+    "https://rmoff.net/index.xml",
+    "https://oxide.computer/blog/feed",
     "https://opentelemetry.io/blog/index.xml"
   ],
   "programming": [
     "https://sergiocarracedo.es/rss.xml",
     "https://acalustra.com/rss.xml",
     "https://xuanwo.io/index.xml",
+    "https://blog.rust-lang.org/feed.xml",
     "https://kill-the-newsletter.com/feeds/m7ki79zsr1bf46mapgtz.xml",
     "https://this-week-in-rust.org/rss.xml"
+  ],
+  "ia": [
+    "https://muxup.com/feed.xml",
+    "https://simonwillison.net/atom/everything/",
+    "https://lucumr.pocoo.org/feed.atom"
   ],
   "productivity": [
     "https://sharpmars.leaflet.pub/rss",
     "https://michael.stapelberg.ch/feed.xml",
     "https://linkarzu.com/feed.xml",
     "https://fdp.io/rss.xml",
-    "https://bower.sh/rss"
+    "https://bower.sh/rss",
+    "https://jvns.ca"
   ]
 }
