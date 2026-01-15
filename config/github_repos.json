@@ -7,11 +7,11 @@
   "junegunn/fzf",
   "lima-vm/lima",
   "neovim/neovim",
-  "openai/codex",
   "rust-lang/rust-analyzer",
   "rvben/rumdl",
   "tmux/tmux",
   "apache/iggy",
   "n0-computer/iroh",
-  "zellij-org/zellij"
+  "zellij-org/zellij",
+  "anomalyco/opencode"
 ]
