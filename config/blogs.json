@@ -21,7 +21,8 @@
     "https://notes.eatonphil.com/rss.xml",
     "https://emptysqua.re/blog/index.xml",
     "https://dbmsmusings.blogspot.com/feeds/posts/default?alt=rss",
-    "https://www.craigkerstiens.com/index.xml"
+    "https://www.craigkerstiens.com/index.xml",
+    "https://www.cs.cmu.edu/~pavlo/blog/feed.xml"
   ],
   "distributed-systems": [
     "https://www.morling.dev/blog/index.xml",
